@@ -6,7 +6,13 @@ files:
   - name: main.go
     visible: true
     learner_created: false
+  - name: main
+    visible: true
+    learner_created: true
 feedback_link: https://hyperskill.org/projects/420/stages/2447/implement#comment
 check_profile: hyperskill_go
-status: Unchecked
+status: Solved
+feedback:
+  message: <html>Correct solution</html>
+  time: "Fri, 19 Jul 2024 07:30:07 UTC"
 record: -1
