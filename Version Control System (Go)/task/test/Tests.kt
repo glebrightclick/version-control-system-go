@@ -3,53 +3,177 @@ import org.hyperskill.hstest.exception.outcomes.WrongAnswer
 import org.hyperskill.hstest.stage.StageTest
 import org.hyperskill.hstest.testcase.CheckResult
 import org.hyperskill.hstest.testing.TestedProgram
+import org.hyperskill.hstest.exception.testing.TestedProgramThrewException
+import java.io.File
+import java.io.File.separatorChar
+import java.io.IOException
 import kotlin.random.Random
 
+// version 1.2
+class TestStage2 : StageTest<String>() {
 
-class TestStage1 : StageTest<String>() {
-    @DynamicTest
+    @DynamicTest(order = 1)
+    fun checkVcsDirAndFileExistsAfterConfigCommand(): CheckResult {
+        deleteVcsDir()
+        val dir = File("vcs")
+        val configPath = "vcs${separatorChar}config.txt"
+        val config =  File(configPath)
+        val testFeedback = "\n\nMake sure vcs folder and $configPath file are being created by the program."
+        val dirNotFoundMessage = "Could not find vcs folder after executing config command.$testFeedback"
+        val configNotFoundMessage = "Could not find $configPath after executing config command.$testFeedback"
+        val fileNotFoundMessage = "Your program has thrown some IOException.$testFeedback"
+
+        try {
+            val testedProgram = TestedProgram()
+            testedProgram.feedbackOnException(java.io.IOException::class.java, fileNotFoundMessage)
+            testedProgram.start("config", "Max")
+
+            when {
+                dir.exists().not() || dir.isDirectory.not() -> return CheckResult.wrong(dirNotFoundMessage)
+                config.exists().not() -> return CheckResult.wrong(configNotFoundMessage)
+            }
+
+        } catch (e: TestedProgramThrewException) {
+            return CheckResult.wrong("Your program encountered an error during execution.\n" +
+                    "Please check if your code is creating the 'vcs' directory and the files within it correctly.\n" +
+                    "Ensure that the necessary directories and files are created in the appropriate order before they are accessed.\n" +
+                    "Review the error message below for more details on the specific error and the line number in your code where it occurred.")
+        } finally {
+            deleteVcsDir()
+        }
+        return CheckResult.correct()
+    }
+
+    @DynamicTest(order = 2)
+    fun checkVcsDirAndFileExistsAfterAddCommand(): CheckResult {
+
+        val dir = File("vcs")
+        val indexPath = "vcs${separatorChar}index.txt"
+        val index =  File(indexPath)
+        val testFeedback = "\n\nMake sure vcs folder and $indexPath file are being created by the program."
+        val dirNotFoundMessage = "Could not find vcs folder after executing add command.$testFeedback"
+        val configNotFoundMessage = "Could not find $indexPath after executing add command.$testFeedback"
+        val fileNotFoundMessage = "Your program has thrown some IOException.$testFeedback"
+
+        val abcFile = File("abc.txt")
+        abcFile.createNewFile()
+
+        try {
+            val testedProgram = TestedProgram()
+            testedProgram.feedbackOnException(java.io.IOException::class.java, fileNotFoundMessage)
+            testedProgram.start("add", abcFile.name)
+
+            when {
+                dir.exists().not() || dir.isDirectory.not() -> return CheckResult.wrong(dirNotFoundMessage)
+                index.exists().not() -> return CheckResult.wrong(configNotFoundMessage)
+            }
+
+        } catch (e: TestedProgramThrewException) {
+            return CheckResult.wrong("Your program encountered an error during execution.\n" +
+                    "Please check if your code is creating the 'vcs' directory and the files within it correctly.\n" +
+                    "Ensure that the necessary directories and files are created in the appropriate order before they are accessed.\n" +
+                    "Review the error message below for more details on the specific error and the line number in your code where it occurred.")
+        } finally {
+            deleteVcsDir()
+            deleteFiles(abcFile)
+        }
+        return CheckResult.correct()
+    }
+
+    @DynamicTest(order = 3)
     fun helpPageTest(): CheckResult {
-        checkHelpPageOutput(TestedProgram().start())
-        checkHelpPageOutput(TestedProgram().start("--help"))
-
+        try {
+            checkHelpPageOutput(TestedProgram().start())
+            checkHelpPageOutput(TestedProgram().start("--help"))
+        } finally {
+            deleteVcsDir()
+        }
         return CheckResult.correct()
     }
 
-    @DynamicTest
+    @DynamicTest(order = 4)
     fun configTest(): CheckResult {
-        checkOutputString(TestedProgram().start("config"), "Get and set a username.")
+        try {
+            checkOutputString(TestedProgram().start("config"), "Please, tell me who you are.")
+            checkOutputString(TestedProgram().start("config", "Max"), "The username is Max.")
+            checkOutputString(TestedProgram().start("config"), "The username is Max.")
+            checkOutputString(TestedProgram().start("config", "John"), "The username is John.")
+            checkOutputString(TestedProgram().start("config"), "The username is John.")
+        } finally {
+            deleteVcsDir()
+        }
+
         return CheckResult.correct()
     }
 
-    @DynamicTest
+    @DynamicTest(order = 5)
     fun addTest(): CheckResult {
+        val fileName1 = "file${Random.nextInt(0, 1000)}.txt"
+        val fileName2= "file${Random.nextInt(0, 1000)}.txt"
 
-        checkOutputString(TestedProgram().start("add"), "Add a file to the index.")
+        val file1 = File(fileName1)
+        val file2 = File(fileName2)
+        file1.createNewFile()
+        file2.createNewFile()
+
+        try {
+            checkOutputString(TestedProgram().start("add"), "Add a file to the index.")
+            checkOutputString(TestedProgram().start("add", fileName1), "The file '$fileName1' is tracked.")
+            checkOutputString(TestedProgram().start("add"), "Tracked files:\n$fileName1")
+            checkOutputString(TestedProgram().start("add", fileName2), "The file '$fileName2' is tracked.")
+            checkOutputString(TestedProgram().start("add"), "Tracked files:\n$fileName1\n$fileName2")
+
+            val notExistsFileName = "file${Random.nextInt(0, 1000)}.txt"
+            checkOutputString(
+                TestedProgram().start("add", notExistsFileName),
+                "Can't find '$notExistsFileName'."
+            )
+        } finally {
+            deleteVcsDir()
+            deleteFiles(file1, file2)
+        }
+
         return CheckResult.correct()
     }
 
-    @DynamicTest
+    @DynamicTest(order = 6)
     fun logTest(): CheckResult {
-        checkOutputString(TestedProgram().start("log"), "Show commit logs.")
+        try {
+            checkOutputString(TestedProgram().start("log"), "Show commit logs.")
+        } finally {
+            deleteVcsDir()
+        }
         return CheckResult.correct()
     }
 
-    @DynamicTest
+    @DynamicTest(order = 7)
     fun commitTest(): CheckResult {
-        checkOutputString(TestedProgram().start("commit"), "Save changes.")
+        try {
+            checkOutputString(TestedProgram().start("commit"), "Save changes.")
+        } finally {
+            deleteVcsDir()
+        }
         return CheckResult.correct()
     }
 
-    @DynamicTest
+    @DynamicTest(order = 8)
     fun checkoutTest(): CheckResult {
-        checkOutputString(TestedProgram().start("checkout"), "Restore a file.")
+        try {
+            checkOutputString(TestedProgram().start("checkout"), "Restore a file.")
+        } finally {
+            deleteVcsDir()
+        }
         return CheckResult.correct()
     }
 
-    @DynamicTest
+    @DynamicTest(order = 9)
     fun wrongArgTest(): CheckResult {
-        val suffix = Random.nextInt(0,1000)
-        checkOutputString(TestedProgram().start("wrongArg$suffix"), "'wrongArg$suffix' is not a SVCS command.")
+        try {
+            val suffix = Random.nextInt(0,1000)
+            checkOutputString(TestedProgram().start("wrongArg$suffix"), "'wrongArg$suffix' is not a SVCS command.")
+        } finally {
+            deleteVcsDir()
+        }
         return CheckResult.correct()
     }
 
@@ -90,4 +214,19 @@ class TestStage1 : StageTest<String>() {
         }
     }
 
+    private fun deleteVcsDir() {
+        val dir = File("vcs")
+        try {
+            if (dir.exists()) {
+                dir.deleteRecursively()
+            }
+        } catch (ex: IOException) {}
+    }
+
+    private fun deleteFiles(vararg files: File) {
+        for(file in files) {
+            try { file.delete() } catch (ex: IOException){}
+        }
+    }
 }
+
