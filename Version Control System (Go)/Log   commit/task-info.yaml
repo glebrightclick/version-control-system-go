@@ -1,0 +1,13 @@
+type: remote_edu
+custom_name: Log & commit
+files:
+  - name: main.go
+    visible: true
+    learner_created: false
+  - name: test/Tests.kt
+    visible: false
+    learner_created: false
+feedback_link: https://hyperskill.org/projects/420/stages/2449/implement#comment
+check_profile: hyperskill_go
+status: Unchecked
+record: -1

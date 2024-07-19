@@ -1,0 +1,13 @@
+type: remote_edu
+custom_name: Add & config
+files:
+  - name: main.go
+    visible: true
+    learner_created: false
+  - name: test/Tests.kt
+    visible: false
+    learner_created: false
+feedback_link: https://hyperskill.org/projects/420/stages/2448/implement#comment
+check_profile: hyperskill_go
+status: Unchecked
+record: -1

@@ -1,0 +1,92 @@
+<div class="step-text">
+<h5 id="description">Description</h5>
+<p>In this stage, you should implement two commands. The <code class="language-go">commit</code> command will allow a user to save file changes; <code class="language-go">log</code> will allow viewing the commit history.</p>
+<p>Git may seem quite complicated. If you want to learn more, watch the <a href="https://youtu.be/P6jD966jzlk" rel="noopener noreferrer nofollow" target="_blank">video explanation</a> by GitLab.</p>
+<p>The purpose of this project is to work with files. Store different file versions in the index according to the commits and ensure each commit has a unique ID; this ID should allow you to find a specific file version that matches this commit. You need to think about the concept of a commit ID.</p>
+<p>You can store commits inside <em>vcs/commits</em>. Each commit will be saved to a separate directory. These directories will include a commit's ID and additional information you can store in <em>vcs/log.txt</em>.</p>
+<p>To manage and inspect these directories, you can use the <strong><code class="language-go">os.ReadDir</code></strong> function. It allows you to list the contents of a directory, which is crucial for operations like viewing commit history or checking for changes. Here’s an example of how to use <code class="language-go">os.ReadDir</code>:</p>
+<pre><code class="language-go">entries, err := os.ReadDir("./vcs/commits")
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, entry := range entries {
+    if entry.IsDir() {
+        fmt.Println(entry.Name())
+    }
+}
+</code></pre>
+<p>The above code example lists all directories within the <em>vcs/commits</em> directory representing individual commits. Such functionality is key to implementing the <code class="language-go">log</code> command, which displays commit histories and the <code class="language-go">commit</code> command, which needs to determine the latest commit.</p>
+<p>You will also need to determine if a file has been modified since the last commit. To achieve this, calculate the hash of the current file and compare it with the hash of the file from the previous commit. In Go, this can be done using the <strong><code class="language-go">crypto/sha256</code></strong> package.</p>
+<h5 id="objectives">Objectives</h5>
+<p>Implement the following commands:</p>
+<ul>
+<li><code class="language-go">commit</code> must be passed to the program along with a message (see examples). Save all changes. Each commit must be assigned a unique ID, and you must not create a new commit if there are no changes since the last commit. You don't need to optimize the storage of changes, just copy all the staged files to the commit folder every time.</li>
+<li><code class="language-go">log</code> should show all the commits in reverse order.</li>
+</ul>
+<p></p><div class="alert alert-primary">Do not create <em>file1.txt</em>, <em>file2.txt,</em> and <em>untracked_file.txt</em>;<em> </em>these are just examples of the files that a user of your version control system will work with.</div>
+<h5 id="examples">Examples</h5>
+<p>The greater-than symbol followed by a space (<code class="language-go">&gt; </code>) represents the user input. Note that it's not part of the input.</p>
+<p><strong>Example 1</strong>: <em>the <code class="language-go">log</code> argument</em></p>
+<pre><code class="language-no-highlight">No commits yet.</code></pre>
+<p><em>This is the directory tree. Don't output it.</em></p>
+<pre><code class="language-no-highlight">.
+├── vcs
+│   ├── commits
+│   ├── config.txt
+│   ├── index.txt
+│   └── log.txt
+├── file1.txt
+├── file2.txt
+└── untracked_file.txt</code></pre>
+<p><strong>Example 2</strong>: <em>the <code class="language-go">commit "Added several lines of code to the file1.txt"</code> argument</em></p>
+<pre><code class="language-no-highlight">Changes are committed.</code></pre>
+<p><em>This is the directory tree. Don't output it.</em></p>
+<pre><code class="language-no-highlight">.
+├── vcs
+│   ├── commits
+│   │   └── 0b4f05fcd3e1dcc47f58fed4bb189196f99da89a
+│   │       ├── file1.txt
+│   │       └── file2.txt
+│   ├── config.txt
+│   ├── index.txt
+│   └── log.txt
+├── file1.txt
+├── file2.txt
+└── untracked_file.txt</code></pre>
+<p><strong>Example 3</strong>: <em>the <code class="language-go">log</code> argument</em></p>
+<pre><code class="language-no-highlight">commit 0b4f05fcd3e1dcc47f58fed4bb189196f99da89a
+Author: John
+Added several lines of code to the file1.txt
+</code></pre>
+<p><strong>Example 4</strong>: <em>the <code class="language-go">commit "Changed several lines of code in the file2.txt"</code> argument</em></p>
+<pre><code class="language-no-highlight">Changes are committed.</code></pre>
+<p><strong>Example 5</strong>: <em>the <code class="language-go">log</code> argument</em></p>
+<pre><code class="language-no-highlight">commit 2853da19f31cfc086cd5c40915253cb28d5eb01c
+Author: John
+Changed several lines of code in the file2.txt
+
+commit 0b4f05fcd3e1dcc47f58fed4bb189196f99da89a
+Author: John
+Added several lines of code to the file1.txt</code></pre>
+<p><em>This is the directory tree. Don't output it.</em></p>
+<pre><code class="language-no-highlight">.
+├── vcs
+│   ├── commits
+│   │   ├── 2853da19f31cfc086cd5c40915253cb28d5eb01c
+│   │   │   ├── file1.txt
+│   │   │   └── file2.txt
+│   │   └── 0b4f05fcd3e1dcc47f58fed4bb189196f99da89a
+│   │       ├── file1.txt
+│   │       └── file2.txt
+│   ├── config.txt
+│   ├── index.txt
+│   └── log.txt
+├── file1.txt
+├── file2.txt
+└── untracked_file.txt</code></pre>
+<p><strong>Example 6</strong>: <em>the <code class="language-go">commit "Files were not changed"</code> argument</em></p>
+<pre><code class="language-no-highlight">Nothing to commit.</code></pre>
+<p><strong>Example 7</strong>: <em>the <code class="language-go">commit</code> argument</em></p>
+<pre><code class="language-no-highlight">Message was not passed.</code></pre>
+</div>
