@@ -1,19 +1,24 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 )
 
 const (
-	vcsDir       = "./vcs"
-	configFile   = "./vcs/config.txt"
-	indexFile    = "./vcs/index.txt"
-	trackedFile  = "./tracked_file.txt"
-	anotherFile  = "./file.txt"
-	anotherFile1 = "./new_file.txt"
+	testDir    = "./test"
+	vcsDir     = "./vcs"
+	commitsDir = "./vcs/commits"
+
+	configFile = "./vcs/config.txt"
+	indexFile  = "./vcs/index.txt"
+	logFile    = "./vcs/log.txt"
 )
 
 const (
@@ -40,10 +45,15 @@ type ConfigStruct struct {
 	Name string `json:"name"`
 }
 
-func handleConfig(name string) {
+func getConfig() ConfigStruct {
 	var config ConfigStruct
 	file, _ := os.ReadFile(configFile)
 	_ = json.Unmarshal(file, &config)
+	return config
+}
+
+func handleConfig(name string) {
+	config := getConfig()
 
 	if len(name) == 0 {
 		// if both saved and presented names are empty, display fallback message and exit
@@ -54,10 +64,8 @@ func handleConfig(name string) {
 	} else {
 		// set new name to result
 		config.Name = name
-
 		// marshal result into new config
-		configStr, _ := json.Marshal(config)
-		os.WriteFile(configFile, configStr, 0644)
+		save(configFile, config)
 	}
 
 	// display current name
@@ -65,17 +73,46 @@ func handleConfig(name string) {
 }
 
 type File struct {
-	Path string `json:"path"`
+	Path  string `json:"path"`
+	IsDir bool   `json:"-"`
+}
+
+func (f *File) prettyPath() string {
+	return regexp.MustCompile("^./(.*)$").ReplaceAllString(f.Path, `$1`)
 }
 
 type IndexStruct struct {
 	Files []File `json:"files,omitempty"`
 }
 
-func handleAdd(name string) {
+func getIndex() IndexStruct {
 	var index IndexStruct
 	file, _ := os.ReadFile(indexFile)
 	_ = json.Unmarshal(file, &index)
+	return index
+}
+
+func getIndexWithDirectories() []File {
+	index := getIndex()
+	var result []File
+
+	for _, file := range index.Files {
+		path := file.prettyPath()
+		directories := strings.Split(path, "/")
+		parentPath := "./"
+		for i := 0; i < len(directories)-1; i++ {
+			result = append(result, File{Path: parentPath + directories[i], IsDir: true})
+			parentPath += directories[i] + `/`
+		}
+
+		result = append(result, file)
+	}
+
+	return result
+}
+
+func handleAdd(name string) {
+	index := getIndex()
 
 	if len(name) == 0 {
 		if len(index.Files) == 0 {
@@ -85,7 +122,7 @@ func handleAdd(name string) {
 
 		fmt.Println("Tracked files:")
 		for _, file := range index.Files {
-			fmt.Println(file.Path)
+			fmt.Println(file.prettyPath())
 		}
 	} else {
 		// check if file exists
@@ -95,7 +132,8 @@ func handleAdd(name string) {
 			return
 		}
 
-		index.Files = append(index.Files, File{Path: name})
+		pathName := fmt.Sprintf("%s/%s", ".", name)
+		index.Files = append(index.Files, File{Path: pathName, IsDir: false})
 		// marshal result into new config
 		indexStr, _ := json.Marshal(index)
 		os.WriteFile(indexFile, indexStr, 0644)
@@ -103,15 +141,157 @@ func handleAdd(name string) {
 	}
 }
 
-func init() {
-	// create vcs directory to store vcs files
-	err := os.MkdirAll(vcsDir, os.ModePerm)
-	if err != nil {
-		log.Fatal(err)
+type Commit struct {
+	Hash    string `json:"hash"`
+	Author  string `json:"author"`
+	Message string `json:"message"`
+}
+
+type LogStruct struct {
+	Commits []Commit `json:"commits"`
+}
+
+func getLog() LogStruct {
+	var log LogStruct
+	file, _ := os.ReadFile(logFile)
+	_ = json.Unmarshal(file, &log)
+
+	return log
+}
+
+func save(fileName string, content interface{}) {
+	str, _ := json.Marshal(content)
+	os.WriteFile(fileName, str, 0644)
+}
+
+func handleLog() {
+	logData := getLog()
+
+	if len(logData.Commits) == 0 {
+		fmt.Println("No commits yet.")
+	} else {
+		// display all commits one after another
+		for j := len(logData.Commits) - 1; j >= 0; j-- {
+			commit := logData.Commits[j]
+			fmt.Printf(
+				"commit %s\nAuthor: %s\n%s\n\n",
+				commit.Hash,
+				commit.Author,
+				commit.Message,
+			)
+		}
+	}
+}
+
+func calculateHash() string {
+	hash := md5.New()
+	for _, file := range getIndex().Files {
+		file, _ := os.ReadFile(file.Path)
+		hash.Write(file)
 	}
 
-	// create necessary files if it isn't presented
-	filePaths := []string{configFile, indexFile, trackedFile, anotherFile, anotherFile1}
+	// go through current dir - if file is a dir - get full name
+	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+
+func copy(src, dst string) (int64, error) {
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return 0, err
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
+}
+
+func handleCommit(message string) {
+	if len(message) == 0 {
+		fmt.Println("Message was not passed.")
+		return
+	}
+
+	// 1. take last commit hash from log
+	lastCommitHash, logData := "", getLog()
+	if len(logData.Commits) > 0 {
+		lastCommit := logData.Commits[len(logData.Commits)-1]
+		lastCommitHash = lastCommit.Hash
+	}
+
+	// 2. calculate current state of project hash
+	currentHash := calculateHash()
+
+	// 3. compare these two, if equals - display "Nothing to commit."
+	if lastCommitHash == currentHash {
+		fmt.Println("Nothing to commit.")
+	} else {
+		// perform commit:
+		// 1. create directory with hash name in ./vcs/commits directory
+		currentDir := fmt.Sprintf("%s/%s", commitsDir, currentHash)
+		err := os.MkdirAll(currentDir, os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// go through the entire project and copy
+		trackedFiles := getIndexWithDirectories()
+		for _, file := range trackedFiles {
+			path := file.Path
+			fullPath := fmt.Sprintf(
+				"%s/%s",
+				currentDir,
+				file.prettyPath(),
+			)
+
+			_, err := os.ReadDir(path)
+			if err == nil {
+				os.MkdirAll(fullPath, os.ModePerm)
+				continue
+			}
+
+			_, err = copy(path, fullPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		// add to log
+		config := getConfig()
+		logData.Commits = append(
+			logData.Commits,
+			Commit{Hash: currentHash, Author: config.Name, Message: message},
+		)
+		save(logFile, logData)
+		fmt.Println("Changes are committed.")
+	}
+}
+
+func init() {
+	// create necessary directories
+	dirPaths := []string{vcsDir, commitsDir}
+	for _, dirPath := range dirPaths {
+		err := os.MkdirAll(dirPath, os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// create necessary files
+	filePaths := []string{configFile, indexFile, logFile}
 	for _, path := range filePaths {
 		file, err := os.OpenFile(path, os.O_CREATE, os.ModePerm)
 		if err != nil {
@@ -143,9 +323,9 @@ func main() {
 	case cAdd:
 		handleAdd(arg1)
 	case cLog:
-		fmt.Println("Show commit logs.")
+		handleLog()
 	case cCommit:
-		fmt.Println("Save changes.")
+		handleCommit(arg1)
 	case cCheckout:
 		fmt.Println("Restore a file.")
 	default:

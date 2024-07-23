@@ -10,22 +10,13 @@ files:
   - name: vcs/config.txt
     visible: true
     learner_created: true
-  - name: tracked_file.txt
-    visible: true
-    learner_created: true
   - name: vcs/index.txt
     visible: true
     learner_created: true
-  - name: file.txt
-    visible: true
-    learner_created: true
-  - name: new_file.txt
-    visible: true
-    learner_created: true
-feedback_link: https://hyperskill.org/projects/420/stages/2448/implement#comment
+feedback_link: https://hyperskill.org/learn/step/40245#comment
 check_profile: hyperskill_go
 status: Solved
 feedback:
   message: <html>Correct solution</html>
   time: "Fri, 19 Jul 2024 12:46:19 UTC"
-record: -1
+record: 2

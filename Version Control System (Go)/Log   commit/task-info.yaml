@@ -7,7 +7,19 @@ files:
   - name: test/Tests.kt
     visible: false
     learner_created: false
-feedback_link: https://hyperskill.org/projects/420/stages/2449/implement#comment
+  - name: zzz/vcs/uuu.txt
+    visible: true
+    learner_created: true
+  - name: first_file.txt
+    visible: true
+    learner_created: true
+  - name: second_file.txt
+    visible: true
+    learner_created: true
+feedback_link: https://hyperskill.org/learn/step/40246#comment
 check_profile: hyperskill_go
-status: Unchecked
+status: Solved
+feedback:
+  message: <html>Correct solution</html>
+  time: "Tue, 23 Jul 2024 10:02:31 UTC"
 record: -1

@@ -6,7 +6,7 @@ files:
   - name: main.go
     visible: true
     learner_created: false
-feedback_link: https://hyperskill.org/projects/420/stages/2447/implement#comment
+feedback_link: https://hyperskill.org/learn/step/40244#comment
 check_profile: hyperskill_go
 status: Solved
 feedback:
