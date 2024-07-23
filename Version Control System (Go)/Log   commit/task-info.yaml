@@ -10,16 +10,10 @@ files:
   - name: zzz/vcs/uuu.txt
     visible: true
     learner_created: true
-  - name: first_file.txt
-    visible: true
-    learner_created: true
-  - name: second_file.txt
-    visible: true
-    learner_created: true
 feedback_link: https://hyperskill.org/learn/step/40246#comment
 check_profile: hyperskill_go
 status: Solved
 feedback:
   message: <html>Correct solution</html>
   time: "Tue, 23 Jul 2024 10:02:31 UTC"
-record: -1
+record: 3

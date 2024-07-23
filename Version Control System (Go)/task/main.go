@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	testDir    = "./test"
 	vcsDir     = "./vcs"
 	commitsDir = "./vcs/commits"
 
@@ -280,6 +279,37 @@ func handleCommit(message string) {
 	}
 }
 
+func handleCheckout(commit string) {
+	if len(commit) == 0 {
+		fmt.Println("Commit id was not passed.")
+		return
+	}
+
+	dir := fmt.Sprintf("%s/%s", commitsDir, commit)
+	_, errorToAdd := os.ReadDir(dir)
+	if os.IsNotExist(errorToAdd) {
+		fmt.Println("Commit does not exist.")
+		return
+	}
+
+	// delete all files from index.txt
+	for _, file := range getIndex().Files {
+		path := file.Path
+		errorToRemove := os.Remove(path)
+		if errorToRemove != nil {
+			log.Fatal(errorToRemove)
+		}
+
+		// copy from commit path
+		_, errorToCopy := copy(dir+`/`+file.prettyPath(), file.Path)
+		if errorToCopy != nil {
+			log.Fatal(errorToCopy)
+		}
+	}
+
+	fmt.Printf("Switched to commit %s.\n", commit)
+}
+
 func init() {
 	// create necessary directories
 	dirPaths := []string{vcsDir, commitsDir}
@@ -327,7 +357,7 @@ func main() {
 	case cCommit:
 		handleCommit(arg1)
 	case cCheckout:
-		fmt.Println("Restore a file.")
+		handleCheckout(arg1)
 	default:
 		fmt.Printf("'%s' is not a SVCS command.\n", command)
 	}
